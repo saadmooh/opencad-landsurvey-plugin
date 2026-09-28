@@ -1,0 +1,93 @@
+name: ci
+
+# Until now the only thing that ever ran `cargo test` was the nightly re-pin,
+# so a change to the gates got its first execution at 06:17 UTC against a live
+# upstream release — which is how the same gate broke three times. Everything
+# the re-pin relies on runs here first, on the PR that changes it.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: re-pin gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - name: Unit-test the gates against the vendored upstream corpus
+        run: python -m pytest .github/scripts/tests -v
+
+  build:
+    name: build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the verified host compiler
+        shell: bash
+        run: |
+          # `rustup show` only reports since rustup 1.28; it no longer installs the
+          # toolchain named in rust-toolchain.toml. Install it explicitly so the
+          # step does what its name says, whatever rustup version the runner has.
+          rustup toolchain install "$(grep -m1 '^channel' rust-toolchain.toml | cut -d'"' -f2)" --profile minimal
+      - run: python .github/scripts/build_metadata.py
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo build --locked
+        run: cargo build --release --locked
+      - name: cargo test --locked
+        run: cargo test --workspace --locked
+      # release.yml builds --locked, so a manifest bump committed without a
+      # refreshed lockfile would sail through everything above and fail only at
+      # release time. `--locked` also fails if generate-lockfile would change
+      # anything, which is the check we actually want.
+      - name: The committed lockfile is current
+        run: |
+          cargo metadata --locked --format-version 1 > /dev/null
+          git diff --exit-code Cargo.lock
+
+  windows-compatibility:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the verified host compiler
+        shell: bash
+        run: |
+          # `rustup show` only reports since rustup 1.28; it no longer installs the
+          # toolchain named in rust-toolchain.toml. Install it explicitly so the
+          # step does what its name says, whatever rustup version the runner has.
+          rustup toolchain install "$(grep -m1 '^channel' rust-toolchain.toml | cut -d'"' -f2)" --profile minimal
+      - uses: Swatinem/rust-cache@v2
+      - run: python .github/scripts/build_metadata.py
+      - run: cargo build --release --locked
+      - name: Stage plugin and download published host
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python .github/scripts/build_metadata.py --output dist/plugin.toml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item target/release/opencad_landsurvey_plugin.dll dist/opencad.landsurvey-windows-x86_64.dll
+          $hostBuild = Get-Content host-build.json | ConvertFrom-Json
+          gh release download $hostBuild.tag --repo HakanSeven12/OpenCADStudio --pattern $hostBuild.windows_asset --dir .compat-host
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python .github/scripts/windows_smoke.py --host ".compat-host/$($hostBuild.windows_asset)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-compatibility-logs
+          path: .compat-host/logs
