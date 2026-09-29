@@ -159,7 +159,7 @@ pub fn find_featureline_in_document(
             Some((name, "")) if name.eq_ignore_ascii_case(token) => {
                 let mut vertices = Vec::new();
                 // LwPolyline vertices are CadPoint (acadrust::Point) with f64 x,y
-                let cad_points: Vec<CadPoint> = poly.into().collect();
+                let cad_points: Vec<CadPoint> = poly.into_iter().collect::<Vec<CadPoint>>();
                 for point in cad_points {
                     let pt = landsurvey::featureline::entity::Point3d::new(point.x, point.y, 0.0);
                     vertices.push(FeatureVertex {
