@@ -13,3 +13,7 @@ api_version = 5
 ribbon_order = 50
 command_prefixes = ["LS_"]
 xdata_apps = ["LANDSURVEY_POINT", "LANDSURVEY_PLAN", "LANDSURVEY_SURFACE"]
+
+[build]
+rustc_version = "__RUSTC_VERSION__"
+acadrust_source = "__ACADRUST_SOURCE__"
