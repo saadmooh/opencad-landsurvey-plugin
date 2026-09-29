@@ -159,7 +159,7 @@ pub fn find_featureline_in_document(
             Some((name, "")) if name.eq_ignore_ascii_case(token) => {
                 let mut vertices = Vec::new();
                 for point in poly.into() {
-                    let pt: Point3d = Point3d { x: point.x as f64, y: point.y as f64, z: 0.0 };
+                    let pt = Point3d::new(point.x, point.y, 0.0);
                     vertices.push(FeatureVertex {
                         pt,
                         bulge: 0.0,
