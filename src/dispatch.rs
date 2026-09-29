@@ -159,13 +159,14 @@ pub fn find_featureline_in_document(
             Some((name, "")) if name.eq_ignore_ascii_case(token) => {
                 let mut vertices = Vec::new();
                 for point in poly.into() {
-vertices.push(FeatureVertex {
-                          pt: Point3d::new(point.x as f64, point.y as f64, 0.0),
-                          bulge: 0.0,
-                          z_source: ZSource::TINInterpolated,
-                          grade_in: Some(0.0),
-                          grade_out: Some(0.0),
-                      });
+                    let pt = Point3d::new(point.x as f64, point.y as f64, 0.0);
+                    vertices.push(FeatureVertex {
+                        pt,
+                        bulge: 0.0,
+                        z_source: ZSource::TINInterpolated,
+                        grade_in: Some(0.0),
+                        grade_out: Some(0.0),
+                    });
                 }
                 if !vertices.is_empty() {
                     return Some((name.to_string(), FeatureLine {
@@ -207,7 +208,7 @@ fn surface_from_mesh(m: &Mesh) -> Surface {
         if let Some(face) = m.face(i) {
             let indices = face.indices();
             if indices.len() == 3 {
-                triangles.push([indices[0] as u32, indices[1] as u32, indices[2] as u32]);
+                triangles.push([indices[0] as usize, indices[1] as usize, indices[2] as usize]);
             }
         }
     }
