@@ -10,7 +10,7 @@ repository = "saadmooh/opencad-landsurvey-plugin"
 [opencad]
 # Must match API_VERSION exported by the linked ocs_plugin_api.
 # Studio 2026.36 uses API 5; generated build metadata is added during packaging.
-api_version = 7
+api_version = 5
 ribbon_order = 50
 command_prefixes = ["LS_"]
 xdata_apps = ["LANDSURVEY_POINT", "LANDSURVEY_PLAN", "LANDSURVEY_SURFACE"]
