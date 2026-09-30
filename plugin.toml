@@ -1,6 +1,6 @@
 [plugin]
 id = "opencad.landsurvey"
-name = "Land Survey"
+name = "Land Grading"
 version = "0.4.20"
 description = "Survey points, PNEZD & LandXML import, TIN surfaces, earthwork volumes, COGO, and coordinate transforms (RTS / Helmert / resection)."
 author = "Kevin Griffin"
